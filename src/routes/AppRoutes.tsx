@@ -3,6 +3,7 @@ import WpPage from "../pages/WpPage";
 import { wpPages } from "../data/wpPages";
 import { wpHtmlMap } from "../pages/wpHtml";
 import NotFound from "../pages/NotFound";
+import BlogPostPage from "../pages/BlogPostPage";
 
 export default function AppRoutes() {
   return (
@@ -23,6 +24,8 @@ export default function AppRoutes() {
         />
       ))}
       <Route path="/home/" element={<Navigate to="/" replace />} />
+      <Route path="/:slug/" element={<BlogPostPage />} />
+      <Route path="/:slug" element={<BlogPostPage />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
