@@ -29,6 +29,7 @@ npm run preview
 ## Project Structure
 - `src/pages/html/` original HTML exports
 - `src/pages/WpPage.tsx` renders HTML with body attributes
+- `src/data/blogPosts.ts` blog index content (add new posts here)
 - `src/styles/` custom styles and extracted inline CSS
 - `public/` local vendor assets and uploads
 

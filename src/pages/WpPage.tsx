@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { blogPosts } from "../data/blogPosts";
 
 type BodyAttributes = Record<string, string>;
 type SeoMeta = {
@@ -20,6 +21,10 @@ const CONTACT_PHONE = "+254759436196";
 const CONTACT_EMAIL = "machariashadie@gmail.com";
 
 export default function WpPage({ html, bodyAttributes, title, route, seo }: WpPageProps) {
+  const htmlWithBlogPosts = route.startsWith("/blog")
+    ? html.replace("<!-- BLOG_POSTS -->", renderBlogPosts())
+    : html;
+
   useEffect(() => {
     const body = document.body;
     const previousAttributes: BodyAttributes = {};
@@ -39,7 +44,7 @@ export default function WpPage({ html, bodyAttributes, title, route, seo }: WpPa
     const previousTitle = document.title;
     document.title = title;
 
-    const origin = window.location.origin;
+  const origin = window.location.origin;
     const canonicalUrl = new URL(route, origin).href;
     const ogImageUrl = new URL(seo.ogImage, origin).href;
 
@@ -294,5 +299,47 @@ export default function WpPage({ html, bodyAttributes, title, route, seo }: WpPa
     };
   }, [bodyAttributes, title, route, seo]);
 
-  return <div dangerouslySetInnerHTML={{ __html: html }} />;
+  return <div dangerouslySetInnerHTML={{ __html: htmlWithBlogPosts }} />;
+}
+
+function renderBlogPosts() {
+  const escapeHtml = (value: string) =>
+    value
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+
+  return blogPosts
+    .map((post) => {
+      const href = `/${post.slug}/`;
+      return `<article class="grids grid1">
+\t<div class="boxes">
+\t\t<div class="box-content no-thumbnail">
+\t\t\t<div class="the-title">
+\t\t\t\t<h3>
+\t\t\t\t\t<a href="${href}">${escapeHtml(post.title)}</a>
+\t\t\t\t</h3>
+\t\t\t</div>
+\t\t\t<div class="the-excerpt">
+\t\t\t\t<p>${escapeHtml(post.excerpt)}</p>
+\t\t\t</div>
+\t\t\t<div class="the-readmore">
+\t\t\t\t<a href="${href}">
+\t\t\t\t\tRead More\t\t\t\t</a>
+\t\t\t</div>
+\t\t</div>
+\t\t<div class="box-meta">
+\t\t\t<div class="the-author">
+\t\t\t\t<span>${escapeHtml(post.author)}</span>
+\t\t\t</div>
+\t\t\t<div class="the-date">
+\t\t\t\t<span>${escapeHtml(post.date)}</span>
+\t\t\t</div>
+\t\t</div>
+\t</div>
+</article>`;
+    })
+    .join("\n");
 }
