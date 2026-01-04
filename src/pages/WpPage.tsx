@@ -126,7 +126,6 @@ export default function WpPage({ html, bodyAttributes, title, route, seo }: WpPa
       document.querySelectorAll<HTMLButtonElement>(".close-sidebar-panel .navbar-toggle")
     );
     const overlay = document.querySelector<HTMLElement>(".header-menu-sidebar-overlay");
-    const sidebar = document.querySelector<HTMLElement>("#header-menu-sidebar");
     const overlayTargets = Array.from(
       document.querySelectorAll<HTMLElement>("#header-menu-sidebar, .hfg-ov")
     );
