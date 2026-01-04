@@ -29,6 +29,9 @@ export default function WpPage({ html, bodyAttributes, title, route, seo }: WpPa
     const body = document.body;
     const previousAttributes: BodyAttributes = {};
     const previousMenuState = body.classList.contains("is-menu-sidebar");
+    let mainRoleTarget: HTMLElement | null = null;
+    let mainRolePrevious: string | null = null;
+    let mainIdPrevious: string | null = null;
 
     Object.entries(bodyAttributes).forEach(([key, value]) => {
       previousAttributes[key] = body.getAttribute(key) ?? "";
@@ -123,6 +126,38 @@ export default function WpPage({ html, bodyAttributes, title, route, seo }: WpPa
         heading.replaceWith(replacement);
       });
     }
+
+    if (!document.querySelector("main")) {
+      const anchor = document.querySelector("#mycontent");
+      const candidate =
+        (anchor?.nextElementSibling as HTMLElement | null) ??
+        document.querySelector<HTMLElement>(".elementor") ??
+        document.querySelector<HTMLElement>(".main-all");
+      if (candidate) {
+        mainRoleTarget = candidate;
+        mainRolePrevious = candidate.getAttribute("role");
+        mainIdPrevious = candidate.id || null;
+        candidate.setAttribute("role", "main");
+        if (!candidate.id) {
+          candidate.id = "main-content";
+        }
+      }
+    }
+
+    const videoLoadTimeout = window.setTimeout(() => {
+      const videos = Array.from(
+        document.querySelectorAll<HTMLVideoElement>("video[data-src]")
+      );
+      videos.forEach((video) => {
+        const src = video.getAttribute("data-src");
+        if (!src || video.getAttribute("src")) {
+          return;
+        }
+        video.setAttribute("src", src);
+        video.load();
+        video.play().catch(() => undefined);
+      });
+    }, 1500);
 
     const menuToggles = Array.from(
       document.querySelectorAll<HTMLButtonElement>(".menu-mobile-toggle .navbar-toggle")
@@ -296,6 +331,19 @@ export default function WpPage({ html, bodyAttributes, title, route, seo }: WpPa
       menuCloseButtons.forEach((btn) => btn.removeEventListener("click", onCloseClick));
       overlay?.removeEventListener("click", onCloseClick);
       document.title = previousTitle;
+      window.clearTimeout(videoLoadTimeout);
+      if (mainRoleTarget) {
+        if (mainRolePrevious) {
+          mainRoleTarget.setAttribute("role", mainRolePrevious);
+        } else {
+          mainRoleTarget.removeAttribute("role");
+        }
+        if (mainIdPrevious !== null) {
+          mainRoleTarget.id = mainIdPrevious;
+        } else {
+          mainRoleTarget.removeAttribute("id");
+        }
+      }
     };
   }, [bodyAttributes, title, route, seo]);
 

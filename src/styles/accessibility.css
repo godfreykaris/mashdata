@@ -1,0 +1,15 @@
+.site-footer {
+  color: #1f2937;
+}
+
+.site-footer .footer-menu a,
+.site-footer .box-content span,
+.site-footer .box-content a,
+.site-footer .nv-html-content p {
+  color: #1f2937;
+}
+
+.site-footer .footer-menu a:hover,
+.site-footer .box-content a:hover {
+  color: #111827;
+}
