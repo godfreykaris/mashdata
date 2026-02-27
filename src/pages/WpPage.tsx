@@ -282,6 +282,70 @@ export default function WpPage({ html, bodyAttributes, title, route, seo }: WpPa
       isPartOf: { "@id": siteId },
     };
 
+    // Contact form handler
+    let contactFormCleanup: (() => void) | undefined;
+    if (route.startsWith("/contact")) {
+      const form = document.querySelector<HTMLFormElement>(".solaceform-form");
+      const msgDiv = document.querySelector<HTMLElement>(".solaceform-form-msg");
+      if (form) {
+        const onSubmit = async (e: Event) => {
+          e.preventDefault();
+          const submitBtn = form.querySelector<HTMLButtonElement>(".solaceform-form-button");
+          if (submitBtn) submitBtn.classList.add("active");
+          if (msgDiv) {
+            msgDiv.textContent = "";
+            msgDiv.className = "solaceform-form-msg";
+          }
+
+          const get = (name: string) =>
+            (form.querySelector<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(`[name="${name}"]`)?.value ?? "").trim();
+
+          const name = get("name");
+          const email = get("email");
+          const phone = get("phone");
+          const service = get("service");
+          const message = get("msg");
+
+          if (!name || !email || !message) {
+            if (msgDiv) {
+              msgDiv.textContent = "Please fill in all required fields (Name, Email, Message).";
+              msgDiv.className = "solaceform-form-msg solaceform-error";
+            }
+            if (submitBtn) submitBtn.classList.remove("active");
+            return;
+          }
+
+          try {
+            const res = await fetch("/api/contact", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ name, email, phone, service, message }),
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+              if (msgDiv) {
+                msgDiv.textContent = "Thank you! Your message has been sent successfully.";
+                msgDiv.className = "solaceform-form-msg solaceform-success";
+              }
+              form.reset();
+            } else {
+              throw new Error(data.error || "Something went wrong");
+            }
+          } catch (err) {
+            if (msgDiv) {
+              msgDiv.textContent = err instanceof Error ? err.message : "Failed to send message. Please try again.";
+              msgDiv.className = "solaceform-form-msg solaceform-error";
+            }
+          } finally {
+            if (submitBtn) submitBtn.classList.remove("active");
+          }
+        };
+
+        form.addEventListener("submit", onSubmit);
+        contactFormCleanup = () => form.removeEventListener("submit", onSubmit);
+      }
+    }
+
     const schemaGraph: Array<Record<string, unknown>> = [organization, website, webpage];
     if (route.startsWith("/blog")) {
       schemaGraph.push({
@@ -332,6 +396,7 @@ export default function WpPage({ html, bodyAttributes, title, route, seo }: WpPa
       overlay?.removeEventListener("click", onCloseClick);
       document.title = previousTitle;
       window.clearTimeout(videoLoadTimeout);
+      contactFormCleanup?.();
       if (mainRoleTarget) {
         if (mainRolePrevious) {
           mainRoleTarget.setAttribute("role", mainRolePrevious);
