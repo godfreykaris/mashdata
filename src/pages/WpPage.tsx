@@ -286,16 +286,61 @@ export default function WpPage({ html, bodyAttributes, title, route, seo }: WpPa
     let contactFormCleanup: (() => void) | undefined;
     if (route.startsWith("/contact")) {
       const form = document.querySelector<HTMLFormElement>(".solaceform-form");
-      const msgDiv = document.querySelector<HTMLElement>(".solaceform-form-msg");
       if (form) {
+        const showPopup = (success: boolean, message: string) => {
+          const overlay = document.createElement("div");
+          overlay.style.cssText =
+            "position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:99999;opacity:0;transition:opacity .3s ease";
+
+          const card = document.createElement("div");
+          card.style.cssText =
+            "background:#fff;border-radius:16px;padding:40px 32px 32px;max-width:420px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);transform:scale(0.8);transition:transform .3s ease";
+
+          const iconCircle = document.createElement("div");
+          const color = success ? "#22c55e" : "#ef4444";
+          iconCircle.style.cssText =
+            `width:72px;height:72px;border-radius:50%;background:${color};margin:0 auto 20px;display:flex;align-items:center;justify-content:center`;
+          iconCircle.innerHTML = success
+            ? '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+            : '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+
+          const heading = document.createElement("h3");
+          heading.style.cssText = "margin:0 0 8px;font-size:22px;font-weight:700;color:#1a1a1a";
+          heading.textContent = success ? "Message Sent!" : "Something Went Wrong";
+
+          const text = document.createElement("p");
+          text.style.cssText = "margin:0 0 24px;font-size:15px;color:#666;line-height:1.5";
+          text.textContent = message;
+
+          const btn = document.createElement("button");
+          btn.style.cssText =
+            `display:inline-block;padding:12px 36px;border:none;border-radius:8px;background:${color};color:#fff;font-size:15px;font-weight:600;cursor:pointer;transition:opacity .2s`;
+          btn.textContent = success ? "OK" : "Close";
+          btn.onmouseenter = () => { btn.style.opacity = "0.85"; };
+          btn.onmouseleave = () => { btn.style.opacity = "1"; };
+
+          const close = () => {
+            overlay.style.opacity = "0";
+            card.style.transform = "scale(0.8)";
+            setTimeout(() => overlay.remove(), 300);
+          };
+          btn.onclick = close;
+          overlay.onclick = (e) => { if (e.target === overlay) close(); };
+
+          card.append(iconCircle, heading, text, btn);
+          overlay.appendChild(card);
+          document.body.appendChild(overlay);
+
+          requestAnimationFrame(() => {
+            overlay.style.opacity = "1";
+            card.style.transform = "scale(1)";
+          });
+        };
+
         const onSubmit = async (e: Event) => {
           e.preventDefault();
           const submitBtn = form.querySelector<HTMLButtonElement>(".solaceform-form-button");
           if (submitBtn) submitBtn.classList.add("active");
-          if (msgDiv) {
-            msgDiv.textContent = "";
-            msgDiv.className = "solaceform-form-msg";
-          }
 
           const get = (name: string) =>
             (form.querySelector<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(`[name="${name}"]`)?.value ?? "").trim();
@@ -307,10 +352,7 @@ export default function WpPage({ html, bodyAttributes, title, route, seo }: WpPa
           const message = get("msg");
 
           if (!name || !email || !message) {
-            if (msgDiv) {
-              msgDiv.textContent = "Please fill in all required fields (Name, Email, Message).";
-              msgDiv.className = "solaceform-form-msg solaceform-error";
-            }
+            showPopup(false, "Please fill in all required fields (Name, Email, Message).");
             if (submitBtn) submitBtn.classList.remove("active");
             return;
           }
@@ -323,19 +365,13 @@ export default function WpPage({ html, bodyAttributes, title, route, seo }: WpPa
             });
             const data = await res.json();
             if (res.ok && data.success) {
-              if (msgDiv) {
-                msgDiv.textContent = "Thank you! Your message has been sent successfully.";
-                msgDiv.className = "solaceform-form-msg solaceform-success";
-              }
+              showPopup(true, "Thank you for reaching out! We'll get back to you shortly.");
               form.reset();
             } else {
               throw new Error(data.error || "Something went wrong");
             }
           } catch (err) {
-            if (msgDiv) {
-              msgDiv.textContent = err instanceof Error ? err.message : "Failed to send message. Please try again.";
-              msgDiv.className = "solaceform-form-msg solaceform-error";
-            }
+            showPopup(false, err instanceof Error ? err.message : "Failed to send message. Please try again.");
           } finally {
             if (submitBtn) submitBtn.classList.remove("active");
           }
